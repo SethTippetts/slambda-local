@@ -1,0 +1,45 @@
+'use strict';
+
+const Bluebird = require('bluebird');
+const Slambda = require('slambda');
+
+const TIMEOUT = {{container.timeout}} * 1000;
+
+let slambda = new Slambda()
+  .container('{{container.id}}');
+
+// Initialization
+{{#lifecycle}}
+  {{#init}}
+module.exports.init = Bluebird.method({{{init}}})();
+  {{/init}}
+  {{^init}}
+module.exports = Bluebird.resolve();
+  {{/init}}
+{{/lifecycle}}
+
+{{#methods}}
+slambda.method('{{id}}', '{{{code}}}');
+{{/methods}}
+
+module.exports.main = (calls) => {
+  return Bluebird.all(
+    calls.map(method => run(method.id, method.arguments))
+  );
+}
+
+function run(id, args) {
+  return slambda.run(id, args)
+    .timeout(TIMEOUT)
+    .catch(Bluebird.TimeoutError, function(e) {
+      console.log(`Function timeout out in ${TIMEOUT}ms`);
+      throw new Error(`Function timeout out in ${TIMEOUT}ms`);
+    })
+    .reflect()
+    .then(result => {
+      if (result.isRejected()) {
+        return result.reason();
+      }
+      return result.value();
+    })
+}
