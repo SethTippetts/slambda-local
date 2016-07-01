@@ -28,7 +28,7 @@ const pkg = {
   "dependencies": {}
 };
 
-const defaultDependencies = { bluebird: '^3.4.1', slambda: '~0.0.0' }
+const defaultDependencies = { bluebird: '^3.4.1', slambda: '~0.1.0' }
 
 const defaults = {
   directory: path.resolve(process.cwd(), 'build'),

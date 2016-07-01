@@ -16,7 +16,7 @@ let slambda = new Slambda({
 module.exports.init = Bluebird.method({{{init}}})();
   {{/init}}
   {{^init}}
-module.exports = Bluebird.resolve();
+module.exports.init = Bluebird.resolve();
   {{/init}}
 {{/lifecycle}}
 
