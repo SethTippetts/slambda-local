@@ -6,8 +6,11 @@ const FileSystem = require('fs');
 const Hogan = require('hogan.js');
 const npmInstall = require('spawn-npm-install');
 const Bluebird = require('bluebird');
+const Batch = require('slambda').Batch;
 
-const mkdir = Bluebird.promisify(FileSystem.mkdir);
+const mkdir = (dir) => Bluebird
+  .fromCallback(cb => FileSystem.mkdir(dir, cb))
+  .reflect();
 const writeFile = Bluebird.promisify(FileSystem.writeFile);
 const install = Bluebird.promisify(npmInstall);
 
@@ -25,6 +28,8 @@ const pkg = {
   "dependencies": {}
 };
 
+const defaultDependencies = { bluebird: '^3.4.1', slambda: '~0.0.0' }
+
 const defaults = {
   directory: path.resolve(process.cwd(), 'build'),
 };
@@ -33,10 +38,14 @@ module.exports = class Local {
   constructor(options) {
     this.options = Object.assign({}, defaults, options || {});
     this.directory = this.options.directory;
+
+    // Batching
+    let batch = new Batch(this.execute.bind(this));
+    this.run = batch.run.bind(batch);
   }
 
-  deploy(container, functions) {
-    let deps = container.dependencies;
+  deploy(container, methods) {
+    let deps = Object.assign({}, defaultDependencies, container.dependencies || {});
     let packageJSON = Object.assign({ name: container.id, dependencies: deps }, pkg);
     let cwd = path.join(this.directory, container.id);
     let serial = Object.keys(deps)
