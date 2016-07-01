@@ -5,8 +5,10 @@ const Slambda = require('slambda');
 
 const TIMEOUT = {{container.timeout}} * 1000;
 
-let slambda = new Slambda()
-  .container('{{container.id}}');
+let slambda = new Slambda({
+  autoDeploy: false,
+})
+.container('{{container.id}}');
 
 // Initialization
 {{#lifecycle}}
@@ -22,9 +24,14 @@ module.exports = Bluebird.resolve();
 slambda.method('{{id}}', '{{{code}}}');
 {{/methods}}
 
+
+const init = slambda.deploy();
+
 module.exports.main = (calls) => {
-  return Bluebird.all(
-    calls.map(method => run(method.id, method.arguments))
+  return init.then(() =>
+    Bluebird.all(
+      calls.map(method => run(method.id, method.arguments))
+    )
   );
 }
 
@@ -32,8 +39,9 @@ function run(id, args) {
   return slambda.run(id, args)
     .timeout(TIMEOUT)
     .catch(Bluebird.TimeoutError, function(e) {
-      console.log(`Function timeout out in ${TIMEOUT}ms`);
-      throw new Error(`Function timeout out in ${TIMEOUT}ms`);
+      let err = new Error(`Function timeout out in ${TIMEOUT}ms`)
+      console.error(err);
+      throw err;
     })
     .reflect()
     .then(result => {
