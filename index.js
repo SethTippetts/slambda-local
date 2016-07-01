@@ -25,9 +25,14 @@ const pkg = {
   "dependencies": {}
 };
 
+const defaults = {
+  directory: path.resolve(process.cwd(), 'build'),
+};
+
 module.exports = class Local {
   constructor(options) {
-    this.directory = options.directory;
+    this.options = Object.assign({}, defaults, options || {});
+    this.directory = this.options.directory;
   }
 
   deploy(container, functions) {
